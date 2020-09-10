@@ -79,24 +79,26 @@ def update_table(conn, cur, query):
     except sqlite3.Error as error:
         print("Failed to update table", error)
 
-# TODO: Fix this. This is important. Pls fix
+
 # Calculates unpaid amount based on unpaid hours and hourly pay
 def fix_pay(con, cur):
     cur.execute("SELECT * FROM employees")
     employees = cur.fetchall()
 
     for employee in employees:
-        unpaid_amount = employee[6]
-        unpaid_hours = employee[5]
-        hourly_pay = employee[4]
         id = employee[0]
-        # If employee unpaid_amount is greater than zero and less than hourly rate
-        if 0 < unpaid_hours < hourly_pay:
-            update_table(con, cur,
-                         "UPDATE employees SET unpaid_amount = (unpaid_hours * hourly_pay) + %i WHERE id IS %i" % (
-                             unpaid_amount, id))
+        hourly_pay = employee[4]
+        # unpaid_hours = employee[5]
+        unpaid_amount = employee[6]
+
+        carry_over_hours = unpaid_amount % hourly_pay
+
+        if carry_over_hours > 0:
+            update_table(con, cur, "UPDATE employees SET unpaid_amount = (unpaid_hours * hourly_pay) + %i WHERE id IS "
+                                   "%i" % (carry_over_hours, id))
         else:
-            update_table(con, cur, "UPDATE employees SET unpaid_amount = unpaid_hours * hourly_pay WHERE id IS %i" % id)
+            update_table(con, cur,
+                         "UPDATE employees SET unpaid_amount = (unpaid_hours * hourly_pay) WHERE id IS %i" % id)
 
 
 # Calculates unpaid hours based on unpaid amount and hourly pay
