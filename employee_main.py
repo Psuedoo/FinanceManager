@@ -1,10 +1,5 @@
 from employee_dbhandler import *
 
-# TODO: Add loop while paying employees
-# TODO: Add logs to DB when paying or logging hours for employees
-# TODO: Add Employee object to make for easier handling. Less DB updates possibly?
-# TODO: Fix unpaid_amount goes "NULL" when logging hours
-
 
 # Connect to the DB
 con = db_connect()
@@ -68,6 +63,7 @@ while using_program:
     if has_admin_access or has_normal_access:
         print(admin_menu)
         user_selection = int(input("> "))
+
 
         # View Employees
         if user_selection == 1:
@@ -202,3 +198,4 @@ while using_program:
             print("Thanks for using the employee program!")
             using_program = False
             con.close()
+
