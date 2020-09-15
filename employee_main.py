@@ -195,10 +195,7 @@ while using_program:
 
         # Export Data
         elif user_selection == 11:
-            export_employee_info(con, cur)
-            print("Employee information exported!")
-            export_logs(con, cur)
-            print("Log information exported!")
+            export(con, cur)
 
         # Quit Program
         elif user_selection == 0:

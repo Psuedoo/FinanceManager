@@ -1,6 +1,7 @@
 import json
 import os
 import sqlite3
+import zipfile
 from datetime import datetime
 from pytz import timezone
 
@@ -19,7 +20,7 @@ def db_connect(db_path=DEFAULT_PATH):
 def create_directories():
     date = datetime.now(tz)
 
-    paths = ["C:\FinanceManager", "C:\FinanceManager\Exports", f"C:\FinanceManager\Exports\{date.strftime('%m_%d_%y')}"]
+    paths = ["C:\FinanceManager", "C:\FinanceManager\Exports"]
 
     for path in paths:
         try:
@@ -253,7 +254,7 @@ def employee_paid_debt(con, cur, id, amount_paid):
     update_table(con, cur, "UPDATE employees SET debt = debt - %i WHERE id IS %i" % (amount_paid, id))
 
 
-# Use this to export data
+# Use this to export employee data
 def export_employee_info(con, cur):
     def employees_to_json(cur):
         cur.execute("SELECT * FROM employees")
@@ -288,7 +289,7 @@ def export_employee_info(con, cur):
     log_file.close()
 
 
-# Use this to export logs
+# Use this to export log data
 def export_logs(con, cur):
     def logs_to_json(cur):
         cur.execute("SELECT * FROM logs")
@@ -317,3 +318,24 @@ def export_logs(con, cur):
     log_file = open(f"{file_name}", "w")
     log_file.write(logs_to_json(cur))
     log_file.close()
+
+    update_table(con, cur, "DELETE FROM logs")
+
+
+# Use this to export all employee and log data
+def export(con, cur):
+    date = datetime.now(tz)
+
+    path = f"C:\FinanceManager\Exports\{date.strftime('%m_%d_%y')}"
+
+    try:
+        os.mkdir(path)
+    except OSError:
+        print("Creation of the directory %s failed" % path)
+    else:
+        print("Successfully created the directory %s" % path)
+
+    export_employee_info(con, cur)
+    print("Employee information exported!")
+    export_logs(con, cur)
+    print("Log information exported!")
