@@ -1,5 +1,7 @@
+import json
 import os
 import sqlite3
+import zipfile
 from datetime import datetime
 from pytz import timezone
 
@@ -12,6 +14,21 @@ tz = timezone('EST')
 def db_connect(db_path=DEFAULT_PATH):
     conn = sqlite3.connect(db_path)
     return conn
+
+
+# Create directories
+def create_directories():
+    date = datetime.now(tz)
+
+    paths = ["C:\FinanceManager", "C:\FinanceManager\Exports"]
+
+    for path in paths:
+        try:
+            os.mkdir(path)
+        except OSError:
+            print("Creation of the directory %s failed" % path)
+        else:
+            print("Successfully created the directory %s" % path)
 
 
 # Displays all employees
@@ -215,7 +232,6 @@ def loan(con, cur, id, loan_amount):
 def pay_employee_misc(con, cur, id, amount_paid):
     cur.execute("SELECT * FROM employees WHERE id IS %i" % id)
     selected_employee = cur.fetchall()
-
     for row in selected_employee:
         employee_name = f"{row[1]} {row[2]}"
 
@@ -236,3 +252,90 @@ def employee_paid_debt(con, cur, id, amount_paid):
     add_log(con, cur, format_log(datetime.now(tz), employee_name, "RECEIVED", amount_paid))
 
     update_table(con, cur, "UPDATE employees SET debt = debt - %i WHERE id IS %i" % (amount_paid, id))
+
+
+# Use this to export employee data
+def export_employee_info(con, cur):
+    def employees_to_json(cur):
+        cur.execute("SELECT * FROM employees")
+        employees = cur.fetchall()
+
+        employees_list = []
+
+        for employee in employees:
+            employee_dict = {
+                "id": employee[0],
+                "name": f"{employee[1]} {employee[2]}",
+                "phone number": employee[3],
+                "hourly rate": employee[4],
+                "unpaid hours": employee[5],
+                "unpaid amount": employee[6],
+                "unpaid misc": employee[8],
+                "debt": employee[7]
+            }
+
+            employees_list.append(employee_dict)
+
+        return json.dumps(employees_list, indent=4)
+
+    date = datetime.now(tz)
+    date_formatted = date.strftime('%m_%d_%y')
+
+    file_location = f"C:\FinanceManager\Exports\{date_formatted}"
+    file_name = f"{file_location}\employee_information_{date_formatted}.json"
+
+    log_file = open(f"{file_name}", "w")
+    log_file.write(employees_to_json(cur))
+    log_file.close()
+
+
+# Use this to export log data
+def export_logs(con, cur):
+    def logs_to_json(cur):
+        cur.execute("SELECT * FROM logs")
+        logs = cur.fetchall()
+
+        logs_list = []
+
+        for log in logs:
+            log_dict = {
+                "id": log[0],
+                "date": log[1],
+                "name": log[2],
+                "action": log[3],
+                "amount": log[4]
+            }
+            logs_list.append(log_dict)
+
+        return json.dumps(logs_list, indent=4)
+
+    date = datetime.now(tz)
+    date_formatted = date.strftime('%m_%d_%y')
+
+    file_location = f"C:\FinanceManager\Exports\{date_formatted}"
+    file_name = f"{file_location}\log_{date_formatted}.json"
+
+    log_file = open(f"{file_name}", "w")
+    log_file.write(logs_to_json(cur))
+    log_file.close()
+
+    update_table(con, cur, "DELETE FROM logs")
+
+
+# Use this to export all employee and log data
+def export(con, cur):
+    date = datetime.now(tz)
+
+    path = f"C:\FinanceManager\Exports\{date.strftime('%m_%d_%y')}"
+
+    try:
+        os.mkdir(path)
+    except OSError:
+        print("Creation of the directory %s failed" % path)
+    else:
+        print("Successfully created the directory %s" % path)
+
+    export_employee_info(con, cur)
+    print("Employee information exported!")
+    export_logs(con, cur)
+    print("Log information exported!")

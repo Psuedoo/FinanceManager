@@ -10,6 +10,9 @@ from employee_dbhandler import *
 con = db_connect()
 cur = con.cursor()
 
+# Creates Directories
+create_directories()
+
 # Setting my variables.
 has_normal_access = False
 has_admin_access = False
@@ -30,6 +33,7 @@ admin_menu = """
         8. Pay Employee For Misc
         9. Employee Paid Debt
         10. View Total Owed
+        11. Export Data
         0. Quit Program"""
 
 # TODO: Add better passwords, maybe encrypted, probably not.
@@ -41,6 +45,7 @@ passwords = ["password", "pass"]
 guessing_pw = True
 guess_count = 0
 max_guesses = 3
+
 
 while guessing_pw:
     print("Welcome to the employees program! Please type in your password to gain access....")
@@ -187,6 +192,10 @@ while using_program:
                 total_amount_owed += unpaid_amount + unpaid_misc
 
             print(f"Total Amount Owed:\t{total_amount_owed}")
+
+        # Export Data
+        elif user_selection == 11:
+            export(con, cur)
 
         # Quit Program
         elif user_selection == 0:
