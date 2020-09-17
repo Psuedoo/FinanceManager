@@ -146,7 +146,7 @@ def log_employee_hours(con, cur):
                         fix_pay(con, cur)
                         is_same_employee = False
                     else:
-                        cur.execute("SELECT * FROM employees WHERE id IS %i" % id)
+                        cur.execute("SELECT * FROM employees WHERE id IS %i" % employee_selection)
                         selected_employee = cur.fetchall()
 
                         for row in selected_employee:
@@ -268,7 +268,7 @@ def borrow(con, cur):
 # Use this to loan money to an employee
 def loan(con, cur):
     employee_selection = int(input("Please enter the ID of the employee you're wanting to loan money to...\n> "))
-    cur.execute("SELECT * FROM employees WHERE id IS %i" % id)
+    cur.execute("SELECT * FROM employees WHERE id IS %i" % employee_selection)
     selected_employee = cur.fetchall()
     if selected_employee:
         loan_amount = int(input("Please enter the amount to loan that employee...\n> "))
@@ -309,19 +309,19 @@ def pay_employee_misc(con, cur):
 # Use this to take away from employee debt
 def employee_paid_debt(con, cur):
     employee_selection = int(input("Please enter the ID of the employee you're wanting to pay...\n> "))
-    cur.execute("SELECT * FROM employees WHERE id IS %i" % id)
+    cur.execute("SELECT * FROM employees WHERE id IS %i" % employee_selection)
     selected_employee = cur.fetchall()
 
     if selected_employee:
         for row in selected_employee:
             id = row[0]
             employee_name = f"{row[1]} {row[2]}"
-            amount_paid = int(input("Please enter the amount employee paid off their debt...\n> "))
+        amount_paid = int(input("Please enter the amount employee paid off their debt...\n> "))
 
         add_log(con, cur, format_log(datetime.now(tz), employee_name, "RECEIVED", id))
 
         update_table(con, cur,
-                     "UPDATE employees SET debt = debt - %i WHERE id IS %i" % (amount_paid, selected_employee))
+                     "UPDATE employees SET debt = debt - %i WHERE id IS %i" % (amount_paid, id))
 
 
 # Use this to view total amount owed
