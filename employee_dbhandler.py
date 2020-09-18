@@ -214,7 +214,7 @@ def pay_employee(con, cur):
 # Displays logs (CURRENTLY DISPLAYS ALL LOGS)
 def view_logs(conn):
     cur = conn.cursor()
-    cur.execute("SELECT * FROM logs")
+    cur.execute("SELECT * FROM logs LIMIT 15")
     rows = cur.fetchall()
 
     print("Here are the logs:")
@@ -423,6 +423,29 @@ def export(con, cur):
     print("Employee information exported!")
     export_logs(con, cur)
     print("Log information exported!")
+
+# TODO : Finish this function. Wanting to be able to use these to possibly create the tables where I don't have to run them seperately.
+# Use this to create a new employee
+def create_employee(con, cur):
+    print("Employee creation started. Type 0 in any of the fields to stop creation and return to the main menu.")
+    first_name = input("Enter a first name:\n> ")
+    last_name = input("Enter a last name:\n> ")
+    phone_number = int(input("Enter a phone number:\n> "))
+    hourly_pay = int(input("Enter an hourly pay:\n> "))
+    unpaid_hours = 0
+    unpaid_amount = 0
+    debt = 0
+    unpaid_amount_misc = 0
+
+    print(f"New Employee Information:\n"
+          f"Name: {first_name} {last_name}\n"
+          f"Phone Number: {phone_number}\n"
+          f"Hourly Pay: {hourly_pay}\n")
+
+    confirmation = input("Do you confirm these details? (Y or N)")
+    if confirmation.lower() == "y":
+        update_table(con, cur, "INSERT INTO employees WHERE VALUES (?, ?, ?, ?, ")
+
 
 
 # Use this to quit the program
