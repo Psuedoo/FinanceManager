@@ -26,7 +26,7 @@ def create_directories():
         try:
             os.mkdir(path)
         except OSError:
-            print("Creation of the directory %s failed" % path)
+            print("Creation of the directory %s failed." % path)
         else:
             print("Successfully created the directory %s" % path)
 
@@ -87,14 +87,23 @@ def view_unpaid_employees(conn):
 
 
 # Use to run SQL query to table
-def update_table(conn, cur, query):
-    try:
-        cur.execute(query)
-        conn.commit()
-        print("Record Updated Successfully")
+def update_table(conn, cur, query, values: tuple = None):
+    if values:
+        try:
+            cur.execute(query, values)
+            conn.commit()
+            print("Record Updated Successfully")
 
-    except sqlite3.Error as error:
-        print("Failed to update table", error)
+        except sqlite3.Error as error:
+            print("Failed to update table", error)
+    else:
+        try:
+            cur.execute(query)
+            conn.commit()
+            print("Record Updated Successfully")
+
+        except sqlite3.Error as error:
+            print("Failed to update table", error)
 
 
 # Calculates unpaid amount based on unpaid hours and hourly pay
@@ -105,17 +114,16 @@ def fix_pay(con, cur):
     for employee in employees:
         id = employee[0]
         hourly_pay = employee[4]
-        # unpaid_hours = employee[5]
         unpaid_amount = employee[6]
 
         carry_over_hours = unpaid_amount % hourly_pay
 
         if carry_over_hours > 0:
-            update_table(con, cur, "UPDATE employees SET unpaid_amount = (unpaid_hours * hourly_pay) + %i WHERE id IS "
-                                   "%i" % (carry_over_hours, id))
+            update_table(con, cur, "UPDATE employees SET unpaid_amount = (unpaid_hours * hourly_pay) + ? WHERE id IS "
+                                   "?", (carry_over_hours, id))
         else:
             update_table(con, cur,
-                         "UPDATE employees SET unpaid_amount = (unpaid_hours * hourly_pay) WHERE id IS %i" % id)
+                         "UPDATE employees SET unpaid_amount = (unpaid_hours * hourly_pay) WHERE id IS ?", (id,))
 
 
 # Calculates unpaid hours based on unpaid amount and hourly pay
@@ -136,7 +144,7 @@ def log_employee_hours(con, cur):
             is_same_employee = True
             while is_same_employee:
                 if employee_selection != 8 and employee_selection != 9:
-                    cur.execute("SELECT * FROM employees WHERE id IS %s" % employee_selection)
+                    cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection, ))
                     current_employee = cur.fetchall()
 
                     hours_input = int(input("Please enter the amount of hours to add that employee... (TYPE 0 "
@@ -146,7 +154,7 @@ def log_employee_hours(con, cur):
                         fix_pay(con, cur)
                         is_same_employee = False
                     else:
-                        cur.execute("SELECT * FROM employees WHERE id IS %i" % employee_selection)
+                        cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection, ))
                         selected_employee = cur.fetchall()
 
                         for row in selected_employee:
@@ -156,7 +164,7 @@ def log_employee_hours(con, cur):
                         add_log(con, cur, format_log(datetime.now(tz), employee_name, "WORKED", hours_input))
 
                         update_table(con, cur,
-                                     "UPDATE employees SET unpaid_hours = unpaid_hours + %i WHERE id IS %i" % (
+                                     "UPDATE employees SET unpaid_hours = unpaid_hours + ? WHERE id IS ?", (
                                          hours_input, id))
 
                 elif employee_selection == 8:
@@ -175,7 +183,7 @@ def log_employee_hours(con, cur):
                             add_log(con, cur, format_log(datetime.now(tz), employee_name, "WORKED", hours_input))
 
                             update_table(con, cur,
-                                         "UPDATE employees SET unpaid_hours = unpaid_hours + %i WHERE id IS %s" % (
+                                         "UPDATE employees SET unpaid_hours = unpaid_hours + ? WHERE id IS ?", (
                                              hours_input, employee[0]))
 
                 elif employee_selection == 9:
@@ -204,7 +212,7 @@ def pay_employee(con, cur):
         add_log(con, cur, format_log(datetime.now(tz), employee_name, "PAID", amount_paid))
 
         update_table(con, cur,
-                     "UPDATE employees SET unpaid_amount = unpaid_amount - %i WHERE id IS %i" % (amount_paid, id))
+                     "UPDATE employees SET unpaid_amount = unpaid_amount - ? WHERE id IS ?", (amount_paid, id))
     else:
         print("There are no unpaid employees.")
 
@@ -259,7 +267,7 @@ def borrow(con, cur):
 
         add_log(con, cur, format_log(datetime.now(tz), employee_name, "BORROWED", borrow_amount))
 
-        update_table(con, cur, "UPDATE employees SET unpaid_amount_misc = unpaid_amount_misc + %i WHERE id IS %i" % (
+        update_table(con, cur, "UPDATE employees SET unpaid_amount_misc = unpaid_amount_misc + ? WHERE id IS ?", (
             borrow_amount, id))
     else:
         print("There are no employees with that ID.")
@@ -279,7 +287,7 @@ def loan(con, cur):
 
         add_log(con, cur, format_log(datetime.now(tz), employee_name, "LOANED", loan_amount))
 
-        update_table(con, cur, "UPDATE employees SET debt = debt + %i WHERE id IS %i" % (loan_amount, id))
+        update_table(con, cur, "UPDATE employees SET debt = debt + ? WHERE id IS ?", (loan_amount, id))
     else:
         print("There are no employees with that ID.")
 
@@ -300,7 +308,7 @@ def pay_employee_misc(con, cur):
         add_log(con, cur, format_log(datetime.now(tz), employee_name, "PAID", amount_paid))
 
         update_table(con, cur,
-                     "UPDATE employees SET unpaid_amount_misc = unpaid_amount_misc - %i WHERE id IS %i" % (
+                     "UPDATE employees SET unpaid_amount_misc = unpaid_amount_misc - ? WHERE id IS ?", (
                          amount_paid, id))
     else:
         print("There are no employees with that ID.")
@@ -321,7 +329,7 @@ def employee_paid_debt(con, cur):
         add_log(con, cur, format_log(datetime.now(tz), employee_name, "RECEIVED", id))
 
         update_table(con, cur,
-                     "UPDATE employees SET debt = debt - %i WHERE id IS %i" % (amount_paid, id))
+                     "UPDATE employees SET debt = debt - ? WHERE id IS ?", (amount_paid, id))
 
 
 # Use this to view total amount owed
@@ -424,7 +432,7 @@ def export(con, cur):
     export_logs(con, cur)
     print("Log information exported!")
 
-# TODO : Finish this function. Wanting to be able to use these to possibly create the tables where I don't have to run them seperately.
+
 # Use this to create a new employee
 def create_employee(con, cur):
     print("Employee creation started. Type 0 in any of the fields to stop creation and return to the main menu.")
@@ -444,12 +452,23 @@ def create_employee(con, cur):
 
     confirmation = input("Do you confirm these details? (Y or N)")
     if confirmation.lower() == "y":
-        update_table(con, cur, "INSERT INTO employees WHERE VALUES (?, ?, ?, ?, ")
+        employee_information = (
+            first_name, last_name, phone_number, hourly_pay, unpaid_hours, unpaid_amount, debt, unpaid_amount_misc)
+        update_table(con, cur, "INSERT INTO employees(first_name, last_name, phone_number, hourly_pay, "
+                               "unpaid_hours, unpaid_amount, debt, unpaid_amount_misc) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ",
+                     employee_information)
 
+    if confirmation.lower() == "n":
+        print("Sending back to main menu...")
+    else:
+        print("I don't understand your input. Sending back to main menu...")
+
+
+# Use this to delete an employee
 
 
 # Use this to quit the program
 def quit_program(using_program, con):
-    print("Thanks for using hte employee program!")
+    print("Thanks for using the employee program!")
     using_program = False
     con.close()

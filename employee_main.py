@@ -28,6 +28,7 @@ admin_menu = """
         9. Employee Paid Debt
         10. View Total Owed
         11. Export Data
+        12. Create Employee
         0. Quit Program"""
 
 main_menu_dict = {
@@ -42,6 +43,7 @@ main_menu_dict = {
     9: lambda: employee_paid_debt(con, cur),
     10: lambda: view_amount_owed(con, cur),
     11: lambda: export(con, cur),
+    12: lambda: create_employee(con, cur),
     0: lambda: quit_program(using_program, con)
 }
 
@@ -63,29 +65,15 @@ while guess_count < max_guesses:
         print("You've gained access! Redirecting to the main menu now....")
         has_admin_access = True
         using_program = True
+        break
     else:
         print("Sorry, I don't recognize you.")
         guess_count += 1
+
 if guess_count >= max_guesses:
     print("You're out of guesses, good try!")
     quit_program(using_program, con)
 
-
-# while guessing_pw:
-#     print("Welcome to the employees program! Please type in your password to gain access....")
-#     pw_input = input("> ")
-#
-#     if pw_input in passwords:
-#         print("You've gained access! Redirecting to the main menu now...")
-#         has_admin_access = True
-#         using_program = True
-#         guessing_pw = False
-#     else:
-#         print("Sorry, I don't recognize you.")
-#         guess_count += 1
-#         if guess_count >= max_guesses:
-#             guessing_pw = False
-#             print("You're out of guesses, good try!")
 
 # Main Loop
 while using_program:
