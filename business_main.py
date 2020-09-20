@@ -30,7 +30,7 @@ main_menu = """
         |||| MAIN MENU ||||
         1. View Cash On Hand
         2. Deposit
-        3.
+        3. Withdraw
         4.
         5.
         6.
@@ -42,6 +42,7 @@ main_menu = """
 main_menu_dict = {
     1: lambda: view_cash_on_hand(con),
     2: lambda: deposit(con),
+    3: lambda: withdraw(con),
     0: lambda: quit_program(con),
 }
 

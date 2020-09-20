@@ -73,15 +73,32 @@ def add_log(conn, cur, log):
     conn.commit()
 
 
-# Displays Cash On Hand
-def view_cash_on_hand(conn):
-    cur = conn.cursor()
+# Checks/Get cash on hand
+def get_cash_on_hand(con):
+    cur = con.cursor()
     cur.execute("SELECT cash_on_hand FROM business_money")
-
     rows = cur.fetchall()
-    print("Cash on Hand: ", end="")
     for row in rows:
-        print(row[0])
+        cash_on_hand = row[0]
+
+    return cash_on_hand
+
+
+
+# Displays Cash On Hand
+def view_cash_on_hand(con):
+
+    if not get_cash_on_hand(con):
+        cur = con.cursor()
+        cur.execute("SELECT cash_on_hand FROM business_money")
+
+        rows = cur.fetchall()
+
+        print("Cash on Hand: ", end="")
+        for row in rows:
+            print(row[0])
+    else:
+        print("There is no cash on hand.")
 
 
 # Deposits Money
@@ -122,28 +139,45 @@ def deposit(con):
         print("Money successfully deposited.")
 
 
+# Withdraws money
+def withdraw(con):
+    cur = con.cursor()
+
+    amount = get_cash_on_hand(con)
+
+    if amount <= 0:
+        print("There's no money to withdraw.")
+        return
+
+    with_drawn_amount = int(input("How much would you like to withdraw?\n> "))
+
+    if with_drawn_amount in range(amount):
+        update_table(con, cur, "UPDATE business_money SET cash_on_hand = cash_on_hand - ?", (with_drawn_amount,))
+        add_log(con, cur, format_log(datetime.now(tz), "WITHDRAW", with_drawn_amount))
+
+
 # Displays Payroll
-def view_payroll(conn):
+def view_payroll(con):
     return
 
 
 # Displays Material Amount
-def view_material_amount(conn):
+def view_material_amount(con):
     return
 
 
 # Displays Unpaid Collections
-def view_unpaid_collections(conn):
+def view_unpaid_collections(con):
     return
 
 
 # Displays Debt
-def view_debt(conn):
+def view_debt(cnn):
     return
 
 
 # Displays Utilities
-def view_utilities(conn):
+def view_utilities(con):
     return
 
 
