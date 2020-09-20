@@ -7,6 +7,9 @@ cur = con.cursor()
 # Creates Directories
 create_directories()
 
+# Initialize DB
+db_init(con)
+
 # Setting my variables.
 has_normal_access = False
 has_admin_access = False
@@ -29,6 +32,7 @@ admin_menu = """
         10. View Total Owed
         11. Export Data
         12. Create Employee
+        13. Delete Employee
         0. Quit Program"""
 
 main_menu_dict = {
@@ -41,9 +45,10 @@ main_menu_dict = {
     7: lambda: loan(con, cur),
     8: lambda: pay_employee_misc(con, cur),
     9: lambda: employee_paid_debt(con, cur),
-    10: lambda: view_amount_owed(con, cur),
+    10: lambda: view_amount_owed(cur),
     11: lambda: export(con, cur),
     12: lambda: create_employee(con, cur),
+    13: lambda: delete_employee(con, cur),
     0: lambda: quit_program(using_program, con)
 }
 
@@ -80,4 +85,8 @@ while using_program:
     if has_admin_access or has_normal_access:
         print(admin_menu)
 
-        main_menu_dict[int(input("> "))]()
+        try:
+            main_menu_dict[int(input("> "))]()
+        except ValueError as error:
+            print(error)
+

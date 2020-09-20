@@ -16,10 +16,34 @@ def db_connect(db_path=DEFAULT_PATH):
     return conn
 
 
+# Initialize DB
+def db_init(con):
+    cur = con.cursor()
+
+    try:
+
+        create_employee_table = """
+            CREATE TABLE "employees" (
+            "id"	INTEGER DEFAULT 0 UNIQUE,
+            "first_name"	text,
+            "last_name"	text,
+            "phone_number"	integer,
+            "hourly_pay"	integer DEFAULT 0,
+            "unpaid_hours"	integer DEFAULT 0,
+            "unpaid_amount"	integer DEFAULT 0,
+            "debt"	INTEGER NOT NULL DEFAULT 0,
+            "unpaid_amount_misc"	INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY("id" AUTOINCREMENT)
+        )"""
+
+        cur.execute(create_employee_table)
+
+    except:
+        print("Couldn't create table, may already exist.")
+
+
 # Create directories
 def create_directories():
-    date = datetime.now(tz)
-
     paths = ["C:\FinanceManager", "C:\FinanceManager\Exports"]
 
     for path in paths:
@@ -31,9 +55,22 @@ def create_directories():
             print("Successfully created the directory %s" % path)
 
 
+# Checks if an employee exists
+def check_employee(con, id):
+    cur = con.cursor()
+    cur.execute("SELECT * FROM employees WHERE id IS ?", (id,))
+    results = cur.fetchone()
+
+    if results:
+        return True
+    else:
+        return False
+
+
 # Displays all employees
-def view_employees(conn):
-    cur = conn.cursor()
+def view_employees(con):
+    cur = con.cursor()
+
     cur.execute("SELECT * FROM employees")
 
     rows = cur.fetchall()
@@ -51,6 +88,43 @@ def view_employees(conn):
               f"--------------------------------")
 
 
+# Views single employee
+def view_employee(con, id):
+    cur = con.cursor()
+
+    if check_employee(con, id):
+        cur.execute("SELECT * FROM employees WHERE id IS ?", (id,))
+        employee = cur.fetchall()
+
+        for row in employee:
+            employee_id = row[0]
+            name = f"{row[1]} {row[2]}"
+            phone_number = row[3]
+            hourly_rate = row[4]
+            unpaid_hours = row[5]
+            unpaid_amount = row[6]
+            unpaid_misc = row[8]
+            debt = row[7]
+
+            print(f"--------------------------------\n"
+                  f"ID:\t\t{employee_id}\n"
+                  f"Name:\t\t{name}\n"
+                  f"Phone Number:\t{phone_number}\n"
+                  f"Hourly Rate:\t{hourly_rate}\n"
+                  f"Unpaid Hours:\t{unpaid_hours}\n"
+                  f"Unpaid Amount:\t{unpaid_amount}\n"
+                  f"Unpaid Misc:\t{unpaid_misc}\n"
+                  f"Debt:\t\t{debt}\n"
+                  f"--------------------------------")
+
+        return {"id": employee_id, "name": name, "phone number": phone_number, "hourly rate": hourly_rate,
+                "unpaid hours": unpaid_hours, "unpaid amount": unpaid_amount, "unpaid misc": unpaid_misc, "debt": debt}
+
+    else:
+        print("Employee doesn't exist.")
+
+
+# Checks for unpaid employees
 def check_for_unpaid_employees(conn):
     cur = conn.cursor()
     cur.execute("SELECT * FROM employees WHERE unpaid_amount IS NOT 0")
@@ -86,7 +160,7 @@ def view_unpaid_employees(conn):
         print("There are no unpaid employees.")
 
 
-# Use to run SQL query to table
+# Runs sql query and commits
 def update_table(conn, cur, query, values: tuple = None):
     if values:
         try:
@@ -136,61 +210,53 @@ def log_employee_hours(con, cur):
     is_logging = True
     while is_logging:
         view_employees(con)
+
         employee_selection = int(
             input("Please enter the ID of the employee you're wanting to log hours for (TYPE 8 TO INPUT FOR "
                   "ALL; TYPE 9 TO QUIT)...\n> "))
 
-        if employee_selection:
-            is_same_employee = True
-            while is_same_employee:
-                if employee_selection != 8 and employee_selection != 9:
-                    cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection, ))
-                    current_employee = cur.fetchall()
+        if check_employee(con, employee_selection):
+            if employee_selection != 8 and employee_selection != 9:
+                cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection,))
+                current_employee = cur.fetchone()
 
-                    hours_input = int(input("Please enter the amount of hours to add that employee... (TYPE 0 "
-                                            "WHEN DONE WITH EMPLOYEE)\n> "))
+                hours_input = int(input("Please enter the amount of hours to add that employee...\n> "))
 
-                    if hours_input == 0:
-                        fix_pay(con, cur)
-                        is_same_employee = False
-                    else:
-                        cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection, ))
-                        selected_employee = cur.fetchall()
+                fix_pay(con, cur)
 
-                        for row in selected_employee:
-                            id = row[0]
-                            employee_name = f"{row[1]} {row[2]}"
+                cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection,))
+                selected_employee = cur.fetchall()
 
-                        add_log(con, cur, format_log(datetime.now(tz), employee_name, "WORKED", hours_input))
+                for row in selected_employee:
+                    id = row[0]
+                    employee_name = f"{row[1]} {row[2]}"
 
-                        update_table(con, cur,
-                                     "UPDATE employees SET unpaid_hours = unpaid_hours + ? WHERE id IS ?", (
-                                         hours_input, id))
+                add_log(con, cur, format_log(datetime.now(tz), employee_name, "WORKED", hours_input))
 
-                elif employee_selection == 8:
-                    hours_input = int(
-                        input("Please enter the amount of hours to add to all employees... (TYPE 0 WHEN "
-                              "DONE WITH ALL EMPLOYEES)\n> "))
-                    if hours_input == 0:
-                        is_same_employee = False
-                    else:
-                        cur.execute("SELECT * FROM employees")
-                        selected_employees = cur.fetchall()
+                update_table(con, cur,
+                             "UPDATE employees SET unpaid_hours = unpaid_hours + ? WHERE id IS ?", (
+                                 hours_input, id))
 
-                        for employee in selected_employees:
-                            employee_name = f"{employee[1]} {employee[2]}"
+            elif employee_selection == 8:
+                hours_input = int(
+                    input("Please enter the amount of hours to add to all employees...\n> "))
 
-                            add_log(con, cur, format_log(datetime.now(tz), employee_name, "WORKED", hours_input))
+                cur.execute("SELECT * FROM employees")
+                selected_employees = cur.fetchall()
 
-                            update_table(con, cur,
-                                         "UPDATE employees SET unpaid_hours = unpaid_hours + ? WHERE id IS ?", (
-                                             hours_input, employee[0]))
+                for employee in selected_employees:
+                    employee_name = f"{employee[1]} {employee[2]}"
 
-                elif employee_selection == 9:
-                    is_same_employee = False
-                    is_logging = False
-                else:
-                    print("There are not employees with that ID.")
+                    add_log(con, cur, format_log(datetime.now(tz), employee_name, "WORKED", hours_input))
+
+                    update_table(con, cur,
+                                 "UPDATE employees SET unpaid_hours = unpaid_hours + ? WHERE id IS ?", (
+                                     hours_input, employee[0]))
+
+            elif employee_selection == 9:
+                is_logging = False
+            else:
+                print("There are not employees with that ID.")
 
     fix_pay(con, cur)
 
@@ -202,17 +268,23 @@ def pay_employee(con, cur):
         employee_selection = int(input("Please enter the ID of the employee you're wanting to pay...\n> "))
         amount_paid = int(input("How much are you wanting to pay that employee?\n> "))
 
-        cur.execute("SELECT * FROM employees WHERE id IS %i" % employee_selection)
-        selected_employee = cur.fetchall()
+        if check_employee(con, employee_selection):
 
-        for row in selected_employee:
-            id = row[0]
-            employee_name = f"{row[1]} {row[2]}"
+            cur.execute("SELECT * FROM employees WHERE id IS %i" % employee_selection)
+            selected_employee = cur.fetchall()
 
-        add_log(con, cur, format_log(datetime.now(tz), employee_name, "PAID", amount_paid))
+            for row in selected_employee:
+                id = row[0]
+                employee_name = f"{row[1]} {row[2]}"
 
-        update_table(con, cur,
-                     "UPDATE employees SET unpaid_amount = unpaid_amount - ? WHERE id IS ?", (amount_paid, id))
+            add_log(con, cur, format_log(datetime.now(tz), employee_name, "PAID", amount_paid))
+
+            update_table(con, cur,
+                         "UPDATE employees SET unpaid_amount = unpaid_amount - ? WHERE id IS ?", (amount_paid, id))
+
+        else:
+            print("Employee doesn't exist.")
+
     else:
         print("There are no unpaid employees.")
 
@@ -242,7 +314,7 @@ def format_log(date, name, action, amount):
     return log
 
 
-# Use this to create a log for DB
+# Creates a log for DB
 def add_log(conn, cur, log):
     date = log[0]
     name = log[1]
@@ -253,87 +325,101 @@ def add_log(conn, cur, log):
     conn.commit()
 
 
-# Use this to borrow money from an employee
+# Borrows money from an employee
 def borrow(con, cur):
     employee_selection = int(input("Please enter the ID of the employee you're wanting to borrow money from...\n> "))
-    cur.execute("SELECT * FROM employees WHERE id IS %i" % employee_selection)
-    selected_employee = cur.fetchall()
 
-    if selected_employee:
-        borrow_amount = int(input("Please enter the amount to borrow from that employee...\n> "))
-        for row in selected_employee:
-            id = row[0]
-            employee_name = f"{row[1]} {row[2]}"
+    if check_employee(con, employee_selection):
 
-        add_log(con, cur, format_log(datetime.now(tz), employee_name, "BORROWED", borrow_amount))
+        cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection,))
+        selected_employee = cur.fetchall()
 
-        update_table(con, cur, "UPDATE employees SET unpaid_amount_misc = unpaid_amount_misc + ? WHERE id IS ?", (
-            borrow_amount, id))
+        if selected_employee:
+            borrow_amount = int(input("Please enter the amount to borrow from that employee...\n> "))
+            for row in selected_employee:
+                id = row[0]
+                employee_name = f"{row[1]} {row[2]}"
+
+            add_log(con, cur, format_log(datetime.now(tz), employee_name, "BORROWED", borrow_amount))
+
+            update_table(con, cur, "UPDATE employees SET unpaid_amount_misc = unpaid_amount_misc + ? WHERE id IS ?", (
+                borrow_amount, id))
     else:
         print("There are no employees with that ID.")
 
 
-# Use this to loan money to an employee
+# Loans money to an employee
 def loan(con, cur):
     employee_selection = int(input("Please enter the ID of the employee you're wanting to loan money to...\n> "))
-    cur.execute("SELECT * FROM employees WHERE id IS %i" % employee_selection)
-    selected_employee = cur.fetchall()
-    if selected_employee:
-        loan_amount = int(input("Please enter the amount to loan that employee...\n> "))
 
-        for row in selected_employee:
-            id = row[0]
-            employee_name = f"{row[1]} {row[2]}"
+    if check_employee(con, employee_selection):
 
-        add_log(con, cur, format_log(datetime.now(tz), employee_name, "LOANED", loan_amount))
+        cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection,))
+        selected_employee = cur.fetchall()
+        if selected_employee:
+            loan_amount = int(input("Please enter the amount to loan that employee...\n> "))
 
-        update_table(con, cur, "UPDATE employees SET debt = debt + ? WHERE id IS ?", (loan_amount, id))
+            for row in selected_employee:
+                id = row[0]
+                employee_name = f"{row[1]} {row[2]}"
+
+            add_log(con, cur, format_log(datetime.now(tz), employee_name, "LOANED", loan_amount))
+
+            update_table(con, cur, "UPDATE employees SET debt = debt + ? WHERE id IS ?", (loan_amount, id))
     else:
         print("There are no employees with that ID.")
 
 
-# Use this to pay off employee misc
+# Pays off employee misc
 def pay_employee_misc(con, cur):
     employee_selection = int(input("Please enter the ID of the employee you're wanting to pay...\n> "))
-    cur.execute("SELECT * FROM employees WHERE id IS %i" % employee_selection)
-    selected_employee = cur.fetchall()
 
-    if selected_employee:
-        for row in selected_employee:
-            id = row[0]
-            employee_name = f"{row[1]} {row[2]}"
+    if check_employee(con, employee_selection):
 
-        amount_paid = int(input("Please enter the amount to pay off employee's misc...\n> "))
+        cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection,))
+        selected_employee = cur.fetchall()
 
-        add_log(con, cur, format_log(datetime.now(tz), employee_name, "PAID", amount_paid))
+        if selected_employee:
+            for row in selected_employee:
+                id = row[0]
+                employee_name = f"{row[1]} {row[2]}"
 
-        update_table(con, cur,
-                     "UPDATE employees SET unpaid_amount_misc = unpaid_amount_misc - ? WHERE id IS ?", (
-                         amount_paid, id))
+            amount_paid = int(input("Please enter the amount to pay off employee's misc...\n> "))
+
+            add_log(con, cur, format_log(datetime.now(tz), employee_name, "PAID", amount_paid))
+
+            update_table(con, cur,
+                         "UPDATE employees SET unpaid_amount_misc = unpaid_amount_misc - ? WHERE id IS ?", (
+                             amount_paid, id))
     else:
         print("There are no employees with that ID.")
 
 
-# Use this to take away from employee debt
+# Takes away from employee debt
 def employee_paid_debt(con, cur):
     employee_selection = int(input("Please enter the ID of the employee you're wanting to pay...\n> "))
-    cur.execute("SELECT * FROM employees WHERE id IS %i" % employee_selection)
-    selected_employee = cur.fetchall()
 
-    if selected_employee:
-        for row in selected_employee:
-            id = row[0]
-            employee_name = f"{row[1]} {row[2]}"
-        amount_paid = int(input("Please enter the amount employee paid off their debt...\n> "))
+    if check_employee(con, employee_selection):
 
-        add_log(con, cur, format_log(datetime.now(tz), employee_name, "RECEIVED", id))
+        cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection,))
+        selected_employee = cur.fetchall()
 
-        update_table(con, cur,
-                     "UPDATE employees SET debt = debt - ? WHERE id IS ?", (amount_paid, id))
+        if selected_employee:
+            for row in selected_employee:
+                id = row[0]
+                employee_name = f"{row[1]} {row[2]}"
+            amount_paid = int(input("Please enter the amount employee paid off their debt...\n> "))
+
+            add_log(con, cur, format_log(datetime.now(tz), employee_name, "RECEIVED", id))
+
+            update_table(con, cur,
+                         "UPDATE employees SET debt = debt - ? WHERE id IS ?", (amount_paid, id))
+    else:
+        print("There are no employees with that ID.")
 
 
-# Use this to view total amount owed
-def view_amount_owed(con, cur):
+# Views total amount owed
+def view_amount_owed(cur):
     cur.execute("SELECT * FROM employees")
     employees = cur.fetchall()
     total_amount_owed = 0
@@ -346,8 +432,8 @@ def view_amount_owed(con, cur):
     print(f"Total Amount Owed:\t{total_amount_owed}")
 
 
-# Use this to export employee data
-def export_employee_info(con, cur):
+# Exports employee data
+def export_employee_info(cur):
     def employees_to_json(cur):
         cur.execute("SELECT * FROM employees")
         employees = cur.fetchall()
@@ -381,7 +467,7 @@ def export_employee_info(con, cur):
     log_file.close()
 
 
-# Use this to export log data
+# Exports log data
 def export_logs(con, cur):
     def logs_to_json(cur):
         cur.execute("SELECT * FROM logs")
@@ -414,7 +500,7 @@ def export_logs(con, cur):
     update_table(con, cur, "DELETE FROM logs")
 
 
-# Use this to export all employee and log data
+# Exports all employee and log data
 def export(con, cur):
     date = datetime.now(tz)
 
@@ -427,15 +513,17 @@ def export(con, cur):
     else:
         print("Successfully created the directory %s" % path)
 
-    export_employee_info(con, cur)
+    export_employee_info(cur)
     print("Employee information exported!")
     export_logs(con, cur)
     print("Log information exported!")
 
 
-# Use this to create a new employee
+# Creates a new employee
 def create_employee(con, cur):
     print("Employee creation started. Type 0 in any of the fields to stop creation and return to the main menu.")
+
+    # Collecting employee information
     first_name = input("Enter a first name:\n> ")
     last_name = input("Enter a last name:\n> ")
     phone_number = int(input("Enter a phone number:\n> "))
@@ -451,6 +539,7 @@ def create_employee(con, cur):
           f"Hourly Pay: {hourly_pay}\n")
 
     confirmation = input("Do you confirm these details? (Y or N)")
+
     if confirmation.lower() == "y":
         employee_information = (
             first_name, last_name, phone_number, hourly_pay, unpaid_hours, unpaid_amount, debt, unpaid_amount_misc)
@@ -458,16 +547,37 @@ def create_employee(con, cur):
                                "unpaid_hours, unpaid_amount, debt, unpaid_amount_misc) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ",
                      employee_information)
 
-    if confirmation.lower() == "n":
+        add_log(con, cur, format_log(datetime.now(tz), f"{first_name} {last_name}", "CREATED", phone_number))
+
+    elif confirmation.lower() == "n":
         print("Sending back to main menu...")
     else:
         print("I don't understand your input. Sending back to main menu...")
 
 
-# Use this to delete an employee
+# Deletes an employee
+def delete_employee(con, cur):
+    view_employees(con)
+    employee_selection = int(input("Please enter the id of the employee you're wanting to delete...\n> "))
+
+    if check_employee(con, employee_selection):
+        employee_information = view_employee(con, employee_selection)
+        confirmation = input("Do you confirm this is the employee you're wanting to delete (Y or N)?\n> ")
+
+        if confirmation.lower() == "y":
+            add_log(con, cur, format_log(datetime.now(tz), employee_information["name"], "DELETED",
+                                         employee_information["phone number"]))
+            update_table(con, cur, "DELETE FROM employees WHERE id IS ?", (employee_selection,))
+            print("Employee deleted!")
+
+        elif confirmation.lower() == "n":
+            print("Sending back to main menu...")
+
+        else:
+            print("I don't understand your input. Sending back to main menu...")
 
 
-# Use this to quit the program
+# Quits the program
 def quit_program(using_program, con):
     print("Thanks for using the employee program!")
     using_program = False
