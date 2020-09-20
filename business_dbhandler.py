@@ -173,21 +173,6 @@ def withdraw(con):
         add_log(con, cur, format_log(datetime.now(tz), "WITHDRAW", with_drawn_amount))
 
 
-# Displays Payroll
-def view_payroll(con):
-    cur = con.cursor()
-
-    cur.execute("SELECT payroll FROM business_money")
-
-    rows = cur.fetchall()
-
-    for row in rows:
-        payroll = row[0]
-        break
-
-    print(f"Payroll: {payroll}")
-
-
 # Displays Material Amount
 def view_material_amount(con):
     cur = con.cursor()

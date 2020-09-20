@@ -30,11 +30,11 @@ main_menu = """
         1. View Cash On Hand
         2. Deposit
         3. Withdraw
-        4. View Payroll
-        5. View Material Amount
-        6. View Unpaid Collections
-        7. View Debt
-        8. View Utilities
+        4. View Material Amount
+        5. View Unpaid Collections
+        6. View Debt
+        7. View Utilities
+        8. View Total Owed For Payroll
         9.
         0. Quit Program"""
 
@@ -42,11 +42,11 @@ main_menu_dict = {
     1: lambda: view_cash_on_hand(con),
     2: lambda: deposit(con),
     3: lambda: withdraw(con),
-    4: lambda: view_payroll(con),
-    5: lambda: view_material_amount(con),
-    6: lambda: view_unpaid_collections(con),
-    7: lambda: view_debt(con),
-    8: lambda: view_utilities(con),
+    4: lambda: view_material_amount(con),
+    5: lambda: view_unpaid_collections(con),
+    6: lambda: view_debt(con),
+    7: lambda: view_utilities(con),
+    8: lambda: view_amount_owed(cur),
     0: lambda: quit_program(con),
 }
 
