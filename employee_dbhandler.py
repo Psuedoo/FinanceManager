@@ -220,8 +220,8 @@ def log_employee_hours(con, cur):
         input("Please enter the ID of the employee you're wanting to log hours for (TYPE 8 TO INPUT FOR "
               "ALL; TYPE 9 TO QUIT)...\n> "))
 
-    if view_employees(con) and check_employee(con, employee_selection):
-        if employee_selection != 8 and employee_selection != 9:
+    if employee_selection != 8 and employee_selection != 9:
+        if check_employee(con, employee_selection):
             cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection,))
             current_employee = cur.fetchone()
 
@@ -242,23 +242,23 @@ def log_employee_hours(con, cur):
                          "UPDATE employees SET unpaid_hours = unpaid_hours + ? WHERE id IS ?", (
                              hours_input, id))
 
-        elif employee_selection == 8:
-            hours_input = int(
-                input("Please enter the amount of hours to add to all employees...\n> "))
+    elif employee_selection == 8:
+        hours_input = int(
+            input("Please enter the amount of hours to add to all employees...\n> "))
 
-            cur.execute("SELECT * FROM employees")
-            selected_employees = cur.fetchall()
+        cur.execute("SELECT * FROM employees")
+        selected_employees = cur.fetchall()
 
-            for employee in selected_employees:
-                employee_name = f"{employee[1]} {employee[2]}"
+        for employee in selected_employees:
+            employee_name = f"{employee[1]} {employee[2]}"
 
-                add_log(con, cur, format_log(datetime.now(tz), employee_name, "WORKED", hours_input))
+            add_log(con, cur, format_log(datetime.now(tz), employee_name, "WORKED", hours_input))
 
-                update_table(con, cur,
-                             "UPDATE employees SET unpaid_hours = unpaid_hours + ? WHERE id IS ?", (
-                                 hours_input, employee[0]))
-        else:
-            print("There are not employees with that ID.")
+            update_table(con, cur,
+                         "UPDATE employees SET unpaid_hours = unpaid_hours + ? WHERE id IS ?", (
+                             hours_input, employee[0]))
+    else:
+        print("There are not employees with that ID.")
 
     fix_pay(con, cur)
 
@@ -587,3 +587,4 @@ def delete_employee(con, cur):
 def quit_program(con):
     print("Thanks for using the employee program!")
     con.close()
+    quit("Exited")
