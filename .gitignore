@@ -149,3 +149,4 @@ static
 .idea/
 /.idea/
 /.idea
+/pyproject.toml

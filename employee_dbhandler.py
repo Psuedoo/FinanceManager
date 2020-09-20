@@ -38,7 +38,7 @@ def db_init(con):
 
         cur.execute(create_employee_table)
 
-    except:
+    except :
         print("Couldn't create table, may already exist.")
 
 
@@ -61,10 +61,7 @@ def check_employee(con, id):
     cur.execute("SELECT * FROM employees WHERE id IS ?", (id,))
     results = cur.fetchone()
 
-    if results:
-        return True
-    else:
-        return False
+    return results
 
 
 # Displays all employees

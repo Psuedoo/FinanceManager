@@ -51,7 +51,7 @@ def view_logs(conn):
 
 
 # Formats the log
-def format_log(date, action, amount, job_payment, description="N/A"):
+def format_log(date, action, amount, job_payment="N", description="N/A"):
     log = [date.strftime("%x %X"), action, amount, job_payment, description]
     print(log)
     return log
@@ -80,15 +80,14 @@ def get_cash_on_hand(con):
     rows = cur.fetchall()
     for row in rows:
         cash_on_hand = row[0]
+        break
 
     return cash_on_hand
 
 
-
 # Displays Cash On Hand
 def view_cash_on_hand(con):
-
-    if not get_cash_on_hand(con):
+    if get_cash_on_hand(con):
         cur = con.cursor()
         cur.execute("SELECT cash_on_hand FROM business_money")
 
@@ -97,6 +96,7 @@ def view_cash_on_hand(con):
         print("Cash on Hand: ", end="")
         for row in rows:
             print(row[0])
+            break
     else:
         print("There is no cash on hand.")
 
@@ -113,25 +113,42 @@ def deposit(con):
         # Determines if a deposit came from a job
         job_payment = input("Did money come from a job? (Y or N)\n> ")
         if job_payment == "y":
+
             job_type_menu = """
             1. Plumbing
             2. Framing/Construction
             3. Painting/Finishing
             4. Floors
             5. Roofing/Siding
+            6. Other (Please Specify)
             """
             job_types = {
                 1: "plumbing",
                 2: "framing/construction",
                 3: "painting/finishing",
                 4: "floors",
-                5: "roofing/siding"
+                5: "roofing/siding",
+                6: "other: "
             }
 
             print(job_type_menu)
 
+            while True:
+                try:
+                    job_selection = int(input("Please select a job type..\n> "))
+
+                    if job_selection == 6:
+                        specific_input = "other: " + input("Please specify: ")
+
+                    else:
+                        specific_input = job_types[job_selection]
+                    break
+
+                except ValueError as error:
+                    print(error)
+
             add_log(con, cur, format_log(datetime.now(tz), "DEPOSITED", deposit_amount, "Y",
-                                         job_types[int(input("Please select a job type..\n> "))]))
+                                         specific_input))
 
         else:
             add_log(con, cur, format_log(datetime.now(tz), "DEPOSITED", deposit_amount))
@@ -158,27 +175,73 @@ def withdraw(con):
 
 # Displays Payroll
 def view_payroll(con):
-    return
+    cur = con.cursor()
+
+    cur.execute("SELECT payroll FROM business_money")
+
+    rows = cur.fetchall()
+
+    for row in rows:
+        payroll = row[0]
+        break
+
+    print(f"Payroll: {payroll}")
 
 
 # Displays Material Amount
 def view_material_amount(con):
-    return
+    cur = con.cursor()
+
+    cur.execute("SELECT material FROM business_money")
+
+    rows = cur.fetchall()
+
+    for row in rows:
+        material = row[0]
+        break
+    print(f"Material: {material}")
 
 
 # Displays Unpaid Collections
 def view_unpaid_collections(con):
-    return
+    cur = con.cursor()
+
+    cur.execute("SELECT unpaid_collections FROM business_money")
+
+    rows = cur.fetchall()
+
+    for row in rows:
+        unpaid_collections = row[0]
+        break
+    print(f"Unpaid Collections: {unpaid_collections}")
 
 
 # Displays Debt
-def view_debt(cnn):
-    return
+def view_debt(con):
+    cur = con.cursor()
+
+    cur.execute("SELECT debt FROM business_money")
+
+    rows = cur.fetchall()
+
+    for row in rows:
+        debt = row[0]
+        break
+    print(f"Debt: {debt}")
 
 
 # Displays Utilities
 def view_utilities(con):
-    return
+    cur = con.cursor()
+
+    cur.execute("SELECT utilities FROM business_money")
+
+    rows = cur.fetchall()
+
+    for row in rows:
+        utilities = row[0]
+        break
+    print(f"Utilities: {utilities}")
 
 
 # Quits the program

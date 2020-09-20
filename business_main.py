@@ -3,7 +3,6 @@ from employee_dbhandler import *
 
 """
 TODO:
-    - Add some information to deposits. I.E: From a job? If so, job address. 
     - Create link between payroll and cash
     - Maybe add "auto budget" for payroll? 30% of cash on hand?   
 """
@@ -31,11 +30,11 @@ main_menu = """
         1. View Cash On Hand
         2. Deposit
         3. Withdraw
-        4.
-        5.
-        6.
-        7.
-        8.
+        4. View Payroll
+        5. View Material Amount
+        6. View Unpaid Collections
+        7. View Debt
+        8. View Utilities
         9.
         0. Quit Program"""
 
@@ -43,6 +42,11 @@ main_menu_dict = {
     1: lambda: view_cash_on_hand(con),
     2: lambda: deposit(con),
     3: lambda: withdraw(con),
+    4: lambda: view_payroll(con),
+    5: lambda: view_material_amount(con),
+    6: lambda: view_unpaid_collections(con),
+    7: lambda: view_debt(con),
+    8: lambda: view_utilities(con),
     0: lambda: quit_program(con),
 }
 
