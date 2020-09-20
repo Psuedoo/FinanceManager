@@ -7,6 +7,7 @@ DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'database.sqlite3')
 
 tz = timezone('EST')
 
+
 # Connects to the DB
 def db_connect(db_path=DEFAULT_PATH):
     conn = sqlite3.connect(db_path)
@@ -50,8 +51,8 @@ def view_logs(conn):
 
 
 # Formats the log
-def format_log(date, action, amount, description="N/A"):
-    log = [date.strftime("%x %X"), action, amount, description]
+def format_log(date, action, amount, job_payment, description="N/A"):
+    log = [date.strftime("%x %X"), action, amount, job_payment, description]
     print(log)
     return log
 
@@ -61,10 +62,14 @@ def add_log(conn, cur, log):
     date = log[0]
     action = log[1]
     amount = log[2]
-    description = log[3]
+    job_payment = log[3]
+    description = log[4]
 
-    cur.execute("INSERT INTO business_logs (date, action, amount, description) VALUES (?, ?, ?, ?);", (date, action,
-                                                                                                       amount, description))
+    cur.execute("INSERT INTO business_logs (date, action, amount, job_payment, description) VALUES (?, ?, ?, ?, ?);",
+                (date, action,
+                 amount,
+                 job_payment,
+                 description))
     conn.commit()
 
 
@@ -87,8 +92,34 @@ def deposit(con):
 
     if deposit_amount > 0:
         update_table(con, cur, "UPDATE business_money SET cash_on_hand = cash_on_hand + ?", (deposit_amount,))
+
+        # Determines if a deposit came from a job
+        job_payment = input("Did money come from a job? (Y or N)\n> ")
+        if job_payment == "y":
+            job_type_menu = """
+            1. Plumbing
+            2. Framing/Construction
+            3. Painting/Finishing
+            4. Floors
+            5. Roofing/Siding
+            """
+            job_types = {
+                1: "plumbing",
+                2: "framing/construction",
+                3: "painting/finishing",
+                4: "floors",
+                5: "roofing/siding"
+            }
+
+            print(job_type_menu)
+
+            add_log(con, cur, format_log(datetime.now(tz), "DEPOSITED", deposit_amount, "Y",
+                                         job_types[int(input("Please select a job type..\n> "))]))
+
+        else:
+            add_log(con, cur, format_log(datetime.now(tz), "DEPOSITED", deposit_amount))
+
         print("Money successfully deposited.")
-        add_log(con, cur, format_log(datetime.now(tz), "DEPOSITED", deposit_amount))
 
 
 # Displays Payroll

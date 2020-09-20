@@ -1,6 +1,24 @@
 from business_dbhandler import *
 from employee_dbhandler import *
 
+"""
+TODO:
+    - Add some information to deposits. I.E: From a job? If so, job address. 
+    - Create link between payroll and cash
+    - Maybe add "auto budget" for payroll? 30% of cash on hand?   
+"""
+
+"""
+Attributes of business money:
+    - cash_on_hand: How much available spending money
+    - payroll: How much available to spend on payroll
+    - material: How much available to spend on material
+    - unpaid_collections: How much predicted income from jobs
+    - debt: How much owed for misc
+    - utilities: How much owed for bills
+"""
+
+
 # Connect to the DB
 con = db_connect()
 cur = con.cursor()
