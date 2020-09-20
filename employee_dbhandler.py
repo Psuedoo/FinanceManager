@@ -300,7 +300,7 @@ def pay_employee(con, cur):
 # Displays logs (CURRENTLY DISPLAYS ALL LOGS)
 def view_logs(conn):
     cur = conn.cursor()
-    cur.execute("SELECT * FROM logs LIMIT 15")
+    cur.execute("SELECT * FROM employee_logs LIMIT 15")
     rows = cur.fetchall()
 
     print("Here are the logs:")
@@ -327,7 +327,7 @@ def add_log(conn, cur, log):
     action = log[2]
     amount = log[3]
 
-    cur.execute("INSERT INTO logs (date, name, action, amount) VALUES (?, ?, ?, ?);", (date, name, action, amount))
+    cur.execute("INSERT INTO employee_logs (date, name, action, amount) VALUES (?, ?, ?, ?);", (date, name, action, amount))
     conn.commit()
 
 
@@ -476,7 +476,7 @@ def export_employee_info(cur):
 # Exports log data
 def export_logs(con, cur):
     def logs_to_json(cur):
-        cur.execute("SELECT * FROM logs")
+        cur.execute("SELECT * FROM employee_logs")
         logs = cur.fetchall()
 
         logs_list = []

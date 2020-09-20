@@ -1,4 +1,5 @@
 from business_dbhandler import *
+from employee_dbhandler import *
 
 # Connect to the DB
 con = db_connect()
@@ -10,7 +11,7 @@ has_access = False
 main_menu = """
         |||| MAIN MENU ||||
         1. View Cash On Hand
-        2. 
+        2. Deposit
         3.
         4.
         5.
@@ -22,6 +23,7 @@ main_menu = """
 
 main_menu_dict = {
     1: lambda: view_cash_on_hand(con),
+    2: lambda: deposit(con),
     0: lambda: quit_program(con),
 }
 
@@ -37,7 +39,7 @@ while guess_count < max_guesses:
 
     if pw_input in passwords:
         print("You've gained access! Redirecting to the main menu now....")
-        has_admin_access = True
+        has_access = True
         using_program = True
         break
     else:
