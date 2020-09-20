@@ -44,3 +44,8 @@ def view_debt(conn):
 # Displays Utilities
 def view_utilities(conn):
     return
+
+# Quits the program
+def quit_program(con):
+    print("Thanks for using the business program!")
+    con.close()

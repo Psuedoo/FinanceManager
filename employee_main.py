@@ -49,11 +49,12 @@ main_menu_dict = {
     11: lambda: export(con, cur),
     12: lambda: create_employee(con, cur),
     13: lambda: delete_employee(con, cur),
-    0: lambda: quit_program(using_program, con)
+    0: lambda: quit_program(con),
 }
 
 # TODO: Add better passwords, maybe encrypted, probably not.
 # TODO: Create permissions based on entered password, maybe a username
+# TODO: Maybe edit employees?
 
 # Current Passwords, LOL
 passwords = ["password", "pass"]

@@ -10,7 +10,7 @@ has_access = False
 main_menu = """
         |||| MAIN MENU ||||
         1. View Cash On Hand
-        2.
+        2. 
         3.
         4.
         5.
@@ -20,33 +20,40 @@ main_menu = """
         9.
         0. Quit Program"""
 
+main_menu_dict = {
+    1: lambda: view_cash_on_hand(con),
+    0: lambda: quit_program(con),
+}
+
 passwords = ["password", "pass"]
 
 guessing_pw = True
 guess_count = 0
 max_guesses = 3
 
-while guessing_pw:
-    print("Welcome to the business program! Please type in your password to gain access....")
+while guess_count < max_guesses:
+    print("Welcome to the employees program! Please type in your password to gain access....")
     pw_input = input("> ")
 
     if pw_input in passwords:
-        print("You've gained access! Redirecting to the main menu...")
+        print("You've gained access! Redirecting to the main menu now....")
+        has_admin_access = True
         using_program = True
-        has_access = True
-        guessing_pw = False
+        break
     else:
         print("Sorry, I don't recognize you.")
         guess_count += 1
-        if guess_count >= max_guesses:
-            guessing_pw = False
-            print("You're out of guess, good try!")
 
+if guess_count >= max_guesses:
+    print("You're out of guesses, good try!")
+    quit_program(using_program, con)
+
+# Main Loop
 while using_program:
     if has_access:
         print(main_menu)
-        user_selection = int(input("> "))
 
-        # View Cash On Hand
-        if user_selection == 1:
-            view_cash_on_hand(con)
+        try:
+            main_menu_dict[int(input("> "))]()
+        except ValueError as error:
+            print(error)

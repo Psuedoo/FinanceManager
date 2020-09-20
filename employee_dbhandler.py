@@ -74,18 +74,25 @@ def view_employees(con):
     cur.execute("SELECT * FROM employees")
 
     rows = cur.fetchall()
-    print("Here are the employees: ")
-    for row in rows:
-        print(f"--------------------------------\n"
-              f"ID:\t\t{row[0]}\n"
-              f"Name:\t\t{row[1]} {row[2]}\n"
-              f"Phone Number:\t{row[3]}\n"
-              f"Hourly Rate:\t{row[4]}\n"
-              f"Unpaid Hours:\t{row[5]}\n"
-              f"Unpaid Amount:\t{row[6]}\n"
-              f"Unpaid Misc:\t{row[8]}\n"
-              f"Debt:\t\t{row[7]}\n"
-              f"--------------------------------")
+
+    if rows:
+        print("Here are the employees: ")
+        for row in rows:
+            print(f"--------------------------------\n"
+                  f"ID:\t\t{row[0]}\n"
+                  f"Name:\t\t{row[1]} {row[2]}\n"
+                  f"Phone Number:\t{row[3]}\n"
+                  f"Hourly Rate:\t{row[4]}\n"
+                  f"Unpaid Hours:\t{row[5]}\n"
+                  f"Unpaid Amount:\t{row[6]}\n"
+                  f"Unpaid Misc:\t{row[8]}\n"
+                  f"Debt:\t\t{row[7]}\n"
+                  f"--------------------------------")
+
+        return True
+    else:
+        print("There are no employees.")
+        return False
 
 
 # Views single employee
@@ -207,56 +214,51 @@ def fix_hours(con, cur):
 
 # Adds unpaid hours to employee
 def log_employee_hours(con, cur):
-    is_logging = True
-    while is_logging:
-        view_employees(con)
+    view_employees(con)
 
-        employee_selection = int(
-            input("Please enter the ID of the employee you're wanting to log hours for (TYPE 8 TO INPUT FOR "
-                  "ALL; TYPE 9 TO QUIT)...\n> "))
+    employee_selection = int(
+        input("Please enter the ID of the employee you're wanting to log hours for (TYPE 8 TO INPUT FOR "
+              "ALL; TYPE 9 TO QUIT)...\n> "))
 
-        if check_employee(con, employee_selection):
-            if employee_selection != 8 and employee_selection != 9:
-                cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection,))
-                current_employee = cur.fetchone()
+    if view_employees(con) and check_employee(con, employee_selection):
+        if employee_selection != 8 and employee_selection != 9:
+            cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection,))
+            current_employee = cur.fetchone()
 
-                hours_input = int(input("Please enter the amount of hours to add that employee...\n> "))
+            hours_input = int(input("Please enter the amount of hours to add that employee...\n> "))
 
-                fix_pay(con, cur)
+            fix_pay(con, cur)
 
-                cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection,))
-                selected_employee = cur.fetchall()
+            cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection,))
+            selected_employee = cur.fetchall()
 
-                for row in selected_employee:
-                    id = row[0]
-                    employee_name = f"{row[1]} {row[2]}"
+            for row in selected_employee:
+                id = row[0]
+                employee_name = f"{row[1]} {row[2]}"
+
+            add_log(con, cur, format_log(datetime.now(tz), employee_name, "WORKED", hours_input))
+
+            update_table(con, cur,
+                         "UPDATE employees SET unpaid_hours = unpaid_hours + ? WHERE id IS ?", (
+                             hours_input, id))
+
+        elif employee_selection == 8:
+            hours_input = int(
+                input("Please enter the amount of hours to add to all employees...\n> "))
+
+            cur.execute("SELECT * FROM employees")
+            selected_employees = cur.fetchall()
+
+            for employee in selected_employees:
+                employee_name = f"{employee[1]} {employee[2]}"
 
                 add_log(con, cur, format_log(datetime.now(tz), employee_name, "WORKED", hours_input))
 
                 update_table(con, cur,
                              "UPDATE employees SET unpaid_hours = unpaid_hours + ? WHERE id IS ?", (
-                                 hours_input, id))
-
-            elif employee_selection == 8:
-                hours_input = int(
-                    input("Please enter the amount of hours to add to all employees...\n> "))
-
-                cur.execute("SELECT * FROM employees")
-                selected_employees = cur.fetchall()
-
-                for employee in selected_employees:
-                    employee_name = f"{employee[1]} {employee[2]}"
-
-                    add_log(con, cur, format_log(datetime.now(tz), employee_name, "WORKED", hours_input))
-
-                    update_table(con, cur,
-                                 "UPDATE employees SET unpaid_hours = unpaid_hours + ? WHERE id IS ?", (
-                                     hours_input, employee[0]))
-
-            elif employee_selection == 9:
-                is_logging = False
-            else:
-                print("There are not employees with that ID.")
+                                 hours_input, employee[0]))
+        else:
+            print("There are not employees with that ID.")
 
     fix_pay(con, cur)
 
@@ -266,21 +268,25 @@ def pay_employee(con, cur):
     if check_for_unpaid_employees(con):
         view_unpaid_employees(con)
         employee_selection = int(input("Please enter the ID of the employee you're wanting to pay...\n> "))
-        amount_paid = int(input("How much are you wanting to pay that employee?\n> "))
 
         if check_employee(con, employee_selection):
+            amount_paid = int(input("How much are you wanting to pay that employee?\n> "))
 
-            cur.execute("SELECT * FROM employees WHERE id IS %i" % employee_selection)
-            selected_employee = cur.fetchall()
+            if amount_paid > 0:
 
-            for row in selected_employee:
-                id = row[0]
-                employee_name = f"{row[1]} {row[2]}"
+                cur.execute("SELECT * FROM employees WHERE id IS %i" % employee_selection)
+                selected_employee = cur.fetchall()
 
-            add_log(con, cur, format_log(datetime.now(tz), employee_name, "PAID", amount_paid))
+                for row in selected_employee:
+                    id = row[0]
+                    employee_name = f"{row[1]} {row[2]}"
 
-            update_table(con, cur,
-                         "UPDATE employees SET unpaid_amount = unpaid_amount - ? WHERE id IS ?", (amount_paid, id))
+                add_log(con, cur, format_log(datetime.now(tz), employee_name, "PAID", amount_paid))
+
+                update_table(con, cur,
+                             "UPDATE employees SET unpaid_amount = unpaid_amount - ? WHERE id IS ?", (amount_paid, id))
+            else:
+                print("Have to pay more than 0.")
 
         else:
             print("Employee doesn't exist.")
@@ -538,7 +544,7 @@ def create_employee(con, cur):
           f"Phone Number: {phone_number}\n"
           f"Hourly Pay: {hourly_pay}\n")
 
-    confirmation = input("Do you confirm these details? (Y or N)")
+    confirmation = input("Do you confirm these details? (Y or N)\n")
 
     if confirmation.lower() == "y":
         employee_information = (
@@ -578,7 +584,6 @@ def delete_employee(con, cur):
 
 
 # Quits the program
-def quit_program(using_program, con):
+def quit_program(con):
     print("Thanks for using the employee program!")
-    using_program = False
     con.close()
