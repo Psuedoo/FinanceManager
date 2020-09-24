@@ -3,6 +3,7 @@ import os
 import sqlite3
 import platform
 import zipfile
+from pathlib import Path
 from datetime import datetime
 from pytz import timezone
 
@@ -20,6 +21,7 @@ def db_connect(db_path=DEFAULT_PATH):
 # Initialize DB
 def db_init(con):
     cur = con.cursor()
+
 
     try:
 
@@ -40,15 +42,33 @@ def db_init(con):
         cur.execute(create_employee_table)
 
     except :
-        print("Couldn't create table, may already exist.")
+        print("Couldn't create (employees) table, may already exist.")
+
+
+    try:
+        create_employee_logs_table = """
+            CREATE TABLE "employee_logs" (
+	    "id"	INTEGER NOT NULL UNIQUE,
+	    "date"	TEXT NOT NULL,
+	    "name"	TEXT NOT NULL,
+	    "action"	TEXT NOT NULL,
+	    "amount"	INTEGER NOT NULL,
+	    PRIMARY KEY("id" AUTOINCREMENT)
+        )"""
+
+        cur.execute(create_employee_logs_table)
+
+    except:
+        print("Couldn't create (employees_logs) table, may already exist.")
+
+
 
 
 # Create directories
 def create_directories():
     # Determine user's OS
-    user_os = platform.system()
 
-    if user_os == "Windows":
+    if platform.system() == "Windows":
         print("User's on Windows...")
         paths = ["C:\FinanceManager", "C:\FinanceManager\Exports"]
         
@@ -60,20 +80,15 @@ def create_directories():
             else:
                 print("Successfully created the directory %s" % path)
 
-    elif user_os == "Linux":
+    elif platform.system() == "Linux":
         print("User's on Linux...")
-        print(os.getcwd())
-        paths = ["/home/user/FinanceManager", "/home/user/FinanceManager/Exports"]
 
-        os.makedirs("/home/user/FinanceManager/Exports/")
+        path = Path.home() / 'FinanceManager' / 'Exports'
 
-#        for path in paths:
-#            try:
-#                os.mkdir(path)
-#            except OSError:
-#                print("Creation of the directory %s failed." % path)
-#            else:
-#                print("Successfully created the directory %s" % path)
+        path.mkdir(parents=True, exist_ok=True)
+        
+        print("Directories already there or have been created!")
+
 
 # Checks if an employee exists
 def check_employee(con, id):
@@ -291,7 +306,7 @@ def pay_employee(con, cur):
 
             if amount_paid > 0:
 
-                cur.execute("SELECT * FROM employees WHERE id IS %i" % employee_selection)
+                cur.execute("SELECT * FROM employees WHERE id IS ?", (employee_selection,))
                 selected_employee = cur.fetchall()
 
                 for row in selected_employee:
@@ -482,8 +497,13 @@ def export_employee_info(cur):
     date = datetime.now(tz)
     date_formatted = date.strftime('%m_%d_%y')
 
-    file_location = f"C:\FinanceManager\Exports\{date_formatted}"
-    file_name = f"{file_location}\employee_information_{date_formatted}.json"
+    if platform.system() == "Windows":
+        file_location = f"C:\FinanceManager\Exports\{date_formatted}"
+        file_name = f"{file_location}\employee_information_{date_formatted}.json"
+
+    elif platform.system() == "Linux":
+        file_location = Path.home() / "FinanceManager" / "Exports" / f"{date_formatted}"
+        file_name = file_location / f"employee_information_{date_formatted}.json"
 
     log_file = open(f"{file_name}", "w")
     log_file.write(employees_to_json(cur))
@@ -513,21 +533,33 @@ def export_logs(con, cur):
     date = datetime.now(tz)
     date_formatted = date.strftime('%m_%d_%y')
 
-    file_location = f"C:\FinanceManager\Exports\{date_formatted}"
-    file_name = f"{file_location}\log_{date_formatted}.json"
+    if platform.system() == "Windows":
+        file_location = f"C:\FinanceManager\Exports\{date_formatted}"
+        file_name = f"{file_location}\log_{date_formatted}.json"
 
+    elif platform.system() == "Linux":
+        file_location = Path.home() / "FinanceManager" / "Exports" / f"{date_formatted}"
+        file_name = file_location / f"log_{date_formatted}.json"
+    
     log_file = open(f"{file_name}", "w")
     log_file.write(logs_to_json(cur))
     log_file.close()
+    
 
-    update_table(con, cur, "DELETE FROM logs")
+
+    update_table(con, cur, "DELETE FROM employee_logs")
 
 
 # Exports all employee and log data
 def export(con, cur):
     date = datetime.now(tz)
 
-    path = f"C:\FinanceManager\Exports\{date.strftime('%m_%d_%y')}"
+    if platform.system() == "Windows":
+        path = f"C:\FinanceManager\Exports\{date.strftime('%m_%d_%y')}"
+    
+    elif platform.system() == "Linux": 
+        path = Path.home() / "FinanceManager" / "Exports" / f"{date.strftime('%m_%d_%y')}"
+
 
     try:
         os.mkdir(path)
