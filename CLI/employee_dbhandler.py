@@ -1,6 +1,7 @@
 import json
 import os
 import sqlite3
+import platform
 import zipfile
 from datetime import datetime
 from pytz import timezone
@@ -44,16 +45,35 @@ def db_init(con):
 
 # Create directories
 def create_directories():
-    paths = ["C:\FinanceManager", "C:\FinanceManager\Exports"]
+    # Determine user's OS
+    user_os = platform.system()
 
-    for path in paths:
-        try:
-            os.mkdir(path)
-        except OSError:
-            print("Creation of the directory %s failed." % path)
-        else:
-            print("Successfully created the directory %s" % path)
+    if user_os == "Windows":
+        print("User's on Windows...")
+        paths = ["C:\FinanceManager", "C:\FinanceManager\Exports"]
+        
+        for path in paths:
+            try:
+                os.mkdir(path)
+            except OSError:
+                print("Creation of the directory %s failed." % path)
+            else:
+                print("Successfully created the directory %s" % path)
 
+    elif user_os == "Linux":
+        print("User's on Linux...")
+        print(os.getcwd())
+        paths = ["/home/user/FinanceManager", "/home/user/FinanceManager/Exports"]
+
+        os.makedirs("/home/user/FinanceManager/Exports/")
+
+#        for path in paths:
+#            try:
+#                os.mkdir(path)
+#            except OSError:
+#                print("Creation of the directory %s failed." % path)
+#            else:
+#                print("Successfully created the directory %s" % path)
 
 # Checks if an employee exists
 def check_employee(con, id):
